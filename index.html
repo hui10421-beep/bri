@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="ko" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TransGrid AI - 스마트 그리드 번역 웹 앱</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter & Noto Sans KR -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+        }
+        /* Custom scrollbar for spreadsheet feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col text-slate-800">
+
+<div class="min-h-full flex flex-col">
+    <!-- Top Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <!-- Logo -->
+                <div class="flex items-center space-x-3">
+                    <div class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-md flex items-center justify-center">
+                        <i class="fa-solid fa-table-cells-large text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-slate-900 tracking-tight flex items-center">
+                            TransGrid <span class="ml-1.5 px-1.5 py-0.5 text-[10px] bg-indigo-100 text-indigo-700 rounded-md font-semibold">AI Powered</span>
+                        </h1>
+                        <p class="text-xs text-slate-500">스마트 시트형 다국어 AI 번역 자동화 앱</p>
+                    </div>
+                </div>
+
+                <!-- Global Action Controls -->
+                <div class="flex items-center space-x-2">
+                    <button id="btn-export-csv" class="flex items-center space-x-1.5 px-3 py-2 bg-white border border-slate-300 hover:border-slate-400 text-slate-700 text-sm font-medium rounded-lg shadow-sm transition duration-150">
+                        <i class="fa-solid fa-file-csv text-green-600 text-base"></i>
+                        <span class="hidden sm:inline">CSV 내보내기</span>
+                    </button>
+                    <button id="btn-import-bulk" class="flex items-center space-x-1.5 px-3 py-2 bg-white border border-slate-300 hover:border-slate-400 text-slate-700 text-sm font-medium rounded-lg shadow-sm transition duration-150">
+                        <i class="fa-solid fa-file-import text-blue-500 text-base"></i>
+                        <span class="hidden sm:inline">일괄 입력</span>
+                    </button>
+                    <button id="btn-translate-all" class="flex items-center space-x-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition duration-150">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>전체 번역</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col lg:flex-row gap-6">
+        <!-- Sidebar Options -->
+        <aside class="w-full lg:w-80 flex flex-col gap-4 shrink-0">
+            <!-- AI Engine Settings Card -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                <h2 class="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-indigo-600"></i> AI 번역 제어판
+                </h2>
+                
+                <div class="space-y-4">
+                    <!-- Tone Option -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">문체 / 말투 설정</label>
+                        <select id="setting-tone" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                            <option value="일반적이고 자연스러운 어조">기본 설정 (Neutral)</option>
+                            <option value="정중하고 비즈니스에 적합한 격식있는 말투 (존댓말)">격식체 (Formal / Business)</option>
+                            <option value="친근하고 상냥한 반말 또는 해요체">친근함 (Friendly / Casual)</option>
+                            <option value="최대한 간결하고 직접적인 어조">간결체 (Concise / Direct)</option>
+                            <option value="유머러스하고 재치있는 성격">유머러스함 (Witty / Creative)</option>
+                        </select>
+                    </div>
+
+                    <!-- Domain Option -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">텍스트 카테고리</label>
+                        <select id="setting-domain" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                            <option value="일상적인 대화">일반 텍스트</option>
+                            <option value="IT, 컴퓨터 과학, 소프트웨어 개발 전문 용어">IT / 소프트웨어 개발</option>
+                            <option value="비즈니스 서한, 마케팅 문구, 광고">비즈니스 및 마케팅</option>
+                            <option value="의학, 제약, 건강 관련 지식">의학 및 건강</option>
+                            <option value="문학적 비유, 소설, 예술 장르 표현">문학 및 소설</option>
+                            <option value="학술 논문, 과학 분야 이론">학술 및 에세이</option>
+                        </select>
+                    </div>
+
+                    <!-- Auto Translation Mode -->
+                    <div class="pt-2 border-t border-slate-100">
+                        <label class="flex items-center justify-between cursor-pointer">
+                            <div>
+                                <span class="text-xs font-semibold text-slate-700 block">실시간 자동 번역</span>
+                                <span class="text-[10px] text-slate-400">입력이나 언어 변경 즉시 번역</span>
+                            </div>
+                            <input type="checkbox" id="setting-auto-translate" class="sr-only peer" checked>
+                            <div class="relative w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions Card -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                <h2 class="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-keyboard text-slate-600"></i> 빠른 작업
+                </h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btn-add-row" class="flex flex-col items-center justify-center p-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl transition duration-150 text-center">
+                        <i class="fa-solid fa-plus text-base mb-1"></i>
+                        <span class="text-xs font-semibold">새 행 추가</span>
+                    </button>
+                    <button id="btn-clear-all" class="flex flex-col items-center justify-center p-3 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl transition duration-150 text-center">
+                        <i class="fa-solid fa-trash-can text-base mb-1"></i>
+                        <span class="text-xs font-semibold">전체 초기화</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Help Tips -->
+            <div class="bg-slate-100 rounded-2xl p-4 text-xs text-slate-600 space-y-2 border border-slate-200">
+                <p class="font-bold text-slate-700"><i class="fa-solid fa-circle-info text-indigo-500 mr-1"></i> 사용 팁</p>
+                <ul class="list-disc pl-4 space-y-1">
+                    <li>원문은 입력 즉시 감지되어 자동 번역됩니다.</li>
+                    <li>목록의 행들을 추가하고 다른 대상 언어들을 지정해 보세요.</li>
+                    <li>내보내기 기능을 사용하면 완성된 번역 데이터 표를 CSV로 다운로드할 수 있습니다.</li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Spreadsheet Grid Area -->
+        <section class="flex-1 flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[450px]">
+            <!-- Grid Toolbar -->
+            <div class="p-4 border-b border-slate-200 bg-slate-50 flex flex-wrap gap-2 items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <span class="px-2.5 py-1 bg-slate-200 text-slate-700 text-xs font-bold rounded-full" id="row-counter">0개의 번역 행</span>
+                </div>
+                <div class="flex items-center space-x-2 text-xs text-slate-500">
+                    <span class="flex items-center gap-1"><i class="fa-solid fa-circle text-xs text-green-500"></i> AI 활성화됨</span>
+                </div>
+            </div>
+
+            <!-- Grid Header / Main Sheet Container -->
+            <div class="flex-1 overflow-x-auto relative">
+                <table class="w-full text-left border-collapse table-fixed min-w-[700px]">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-600 text-xs font-semibold uppercase tracking-wider border-b border-slate-200">
+                            <th class="w-12 px-3 py-3 text-center bg-slate-100 sticky left-0 z-10 border-r border-slate-200">번호</th>
+                            <th class="w-[40%] px-4 py-3 border-r border-slate-200">원문 (A열: Original Text)</th>
+                            <th class="w-48 px-4 py-3 border-r border-slate-200">번역할 언어 (B열: Target)</th>
+                            <th class="w-[40%] px-4 py-3 border-r border-slate-200">번역 결과 (C열: Result)</th>
+                            <th class="w-24 px-3 py-3 text-center">동작</th>
+                        </tr>
+                    </thead>
+                    <tbody id="grid-body" class="divide-y divide-slate-200">
+                        <!-- Dynamic Rows injected by JavaScript -->
+                    </tbody>
+                </table>
+
+                <!-- Empty State -->
+                <div id="grid-empty-state" class="hidden flex flex-col items-center justify-center py-20 px-4 text-center">
+                    <div class="bg-slate-100 text-slate-400 w-16 h-16 rounded-full flex items-center justify-center mb-4">
+                        <i class="fa-solid fa-table text-2xl"></i>
+                    </div>
+                    <h3 class="text-slate-800 font-semibold mb-1 text-sm">데이터 행이 없습니다</h3>
+                    <p class="text-xs text-slate-400 mb-4 max-w-sm">번역할 텍스트를 입력할 새 행을 생성해 보세요.</p>
+                    <button id="btn-empty-add" class="px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 text-xs font-medium rounded-lg shadow transition">
+                        첫 행 추가하기
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
+            &copy; 2026 TransGrid AI. All rights reserved. Powered by Gemini-3-Flash.
+        </div>
+    </footer>
+</div>
+
+<!-- Bulk Import Modal -->
+<div id="modal-bulk-import" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden border border-slate-200 transform transition-all">
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+            <h3 class="text-slate-900 font-bold text-base flex items-center gap-2">
+                <i class="fa-solid fa-file-import text-indigo-600"></i> 번역 텍스트 일괄 가져오기
+            </h3>
+            <button id="modal-bulk-close" class="text-slate-400 hover:text-slate-600 transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+        <div class="p-6 space-y-4">
+            <p class="text-xs text-slate-500 leading-relaxed">
+                한 줄에 한 문장씩 여러 개의 문장을 적어주세요. 입력된 줄만큼 새로운 번역 행이 자동으로 생성됩니다.
+            </p>
+            <textarea id="bulk-import-input" rows="8" placeholder="번역할 문장을 여기에 입력하세요.&#10;예시:&#10;안녕하세요, 만나서 반갑습니다.&#10;오늘 날씨가 정말 좋습니다.&#10;이 도구를 유용하게 사용해 주시길 바랍니다." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none font-mono"></textarea>
+            
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5">가져올 때 설정할 대상 언어</label>
+                <select id="bulk-import-lang" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                    <!-- Standard options generated by JS -->
+                </select>
+            </div>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2">
+            <button id="modal-bulk-cancel" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-100 transition">취소</button>
+            <button id="modal-bulk-submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-md transition">적용 및 행 추가</button>
+        </div>
+    </div>
+</div>
+
+<!-- Simple Toast Notification Area -->
+<div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+<script>
+// Language list mapping (matches the spreadsheet original mappings)
+const LANGUAGE_MAP = {
+  "영어 (English)": "en",
+  "일본어 (Japanese)": "ja",
+  "중국어 간체 (Chinese Simplified)": "zh-CN",
+  "중국어 번체 (Chinese Traditional)": "zh-TW",
+  "스페인어 (Spanish)": "es",
+  "프랑스어 (French)": "fr",
+  "독일어 (German)": "de",
+  "베트남어 (Vietnamese)": "vi",
+  "태국어 (Thai)": "th",
+  "인도네시아어 (Indonesian)": "id",
+  "러시아어 (Russian)": "ru",
+  "이탈리아어 (Italian)": "it",
+  "포르투갈어 (Portuguese)": "pt",
+  "아랍어 (Arabic)": "ar",
+  "힌디어 (Hindi)": "hi",
+  "터키어 (Turkish)": "tr",
+  "네팔어 (Nepali)": "ne",
+  "몽골어 (Mongolian)": "mn",
+  "한국어 (Korean)": "ko"
+};
+
+// Initial state data
+let gridRows = [
+    { id: 1, original: "안녕하세요! 인공지능 번역기 시트에 오신 것을 환영합니다.", lang: "en", result: "Hello! Welcome to the AI Translator Sheet.", status: "success" },
+    { id: 2, original: "여기 원하는 텍스트를 입력하고 번역 대상을 자유롭게 골라보세요.", lang: "ja", result: "ここに好きなテキストを入力して、翻訳対象を自由に選んでみてください。", status: "success" },
+    { id: 3, original: "This simple web app runs directly on your browser using advanced LLM.", lang: "ko", result: "이 심플한 웹 앱은 최첨단 LLM을 사용하여 브라우저에서 직접 실행됩니다.", status: "success" }
+];
+let nextId = 4;
+
+
+// Helper function to create uniquely styled Toast notifications
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `flex items-center space-x-2 px-4 py-3 rounded-xl shadow-lg border transition-all duration-300 transform translate-y-2 opacity-0 text-xs font-semibold max-w-sm pointer-events-auto bg-white`;
+    
+    if (type === 'success') {
+        toast.className += ' text-green-800 border-green-100 bg-green-50';
+        toast.innerHTML = `<i class="fa-solid fa-circle-check text-green-500 text-base"></i> <span>${message}</span>`;
+    } else if (type === 'error') {
+        toast.className += ' text-rose-800 border-rose-100 bg-rose-50';
+        toast.innerHTML = `<i class="fa-solid fa-circle-exclamation text-rose-500 text-base"></i> <span>${message}</span>`;
+    } else {
+        toast.className += ' text-slate-800 border-slate-200 bg-white';
+        toast.innerHTML = `<i class="fa-solid fa-circle-info text-indigo-500 text-base"></i> <span>${message}</span>`;
+    }
+
+    container.appendChild(toast);
+    
+    // Animate In
+    setTimeout(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+    }, 50);
+
+    // Remove After Time
+    setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Function to translate single piece of text using the Gemini 3.1 API
+async function translateTextWithGemini(text, targetLangCode, tone, domain) {
+    // API endpoint configured according to guidelines (Canvas proxy utilizes empty string key)
+    const apiKey = ""; 
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+    
+    const targetLanguageName = Object.keys(LANGUAGE_MAP).find(key => LANGUAGE_MAP[key] === targetLangCode) || targetLangCode;
+    
+    const systemPrompt = `You are a professional, accurate translator. Translate the given text precisely into the target language. Do not include any explanations, footnotes, introductory greetings, or conversation. Simply return the translated text itself. Always match the tone and style instructions.`;
+    const userQuery = `Please translate the following text into "${targetLanguageName}" (ISO Code: "${targetLangCode}").
+    
+--- TEXT TO TRANSLATE ---
+${text}
+------------------------
+
+--- STYLING & CONTEXT ---
+1. Tone/Style: ${tone}
+2. Specialized Domain Context: ${domain}
+------------------------
+
+Translation result:`;
+
+    const payload = {
+        contents: [{ parts: [{ text: userQuery }] }],
+        systemInstruction: {
+            parts: [{ text: systemPrompt }]
+        }
+    };
+
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`API returned HTTP status ${response.status}`);
+        }
+
+        const result = await response.json();
+        const translatedContent = result.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        if (translatedContent) {
+            return translatedContent.trim();
+        } else {
+            throw new Error("Invalid API response format");
+        }
+    } catch (err) {
+        console.error("Gemini Translation Error:", err);
+        throw err;
+    }
+}
+
+// Redraw the entire translation grid sheet based on the gridRows array
+function renderGrid() {
+    const gridBody = document.getElementById('grid-body');
+    const emptyState = document.getElementById('grid-empty-state');
+    const counter = document.getElementById('row-counter');
+    
+    counter.textContent = `${gridRows.length}개의 번역 행`;
+
+    if (gridRows.length === 0) {
+        gridBody.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+    }
+    
+    emptyState.classList.add('hidden');
+    gridBody.innerHTML = '';
+
+    gridRows.forEach((row, index) => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition group";
+        
+        // Status indicator class
+        let statusBadge = '';
+        if (row.status === 'translating') {
+            statusBadge = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse" title="번역 진행 중..."></span>`;
+        } else if (row.status === 'error') {
+            statusBadge = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500" title="번역 오류가 발생했습니다."></span>`;
+        } else if (row.status === 'success') {
+            statusBadge = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-green-500" title="완료"></span>`;
+        } else {
+            statusBadge = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-slate-300" title="대기"></span>`;
+        }
+
+        // Generate Target Language Dropdown Options
+        let langSelectOptions = '';
+        Object.entries(LANGUAGE_MAP).forEach(([name, code]) => {
+            langSelectOptions += `<option value="${code}" ${row.lang === code ? 'selected' : ''}>${name}</option>`;
+        });
+
+        tr.innerHTML = `
+            <td class="px-3 py-3 text-center text-xs text-slate-400 font-mono border-r border-slate-200 bg-slate-50 sticky left-0 group-hover:bg-indigo-50/50 group-hover:text-indigo-600 transition flex items-center justify-center space-x-1 h-[76px]">
+                <span>${index + 1}</span>
+                <span class="flex items-center justify-center">${statusBadge}</span>
+            </td>
+            <td class="px-4 py-3 border-r border-slate-200">
+                <textarea class="w-full h-12 bg-transparent hover:bg-slate-50/70 focus:bg-white border border-transparent focus:border-indigo-300 hover:border-slate-200 rounded-lg p-1.5 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500 transition duration-150 font-normal outline-none text-slate-800 placeholder-slate-300" 
+                          placeholder="원문을 입력하세요..." 
+                          oninput="updateRowOriginal(${row.id}, this.value)"
+                          onblur="onRowFieldBlur(${row.id})">${row.original}</textarea>
+            </td>
+            <td class="px-4 py-3 border-r border-slate-200">
+                <select class="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 focus:border-indigo-500 rounded-lg p-2 text-xs text-slate-700 font-medium focus:outline-none transition duration-150"
+                        onchange="updateRowLang(${row.id}, this.value)">
+                    ${langSelectOptions}
+                </select>
+            </td>
+            <td class="px-4 py-3 border-r border-slate-200 relative bg-slate-50/30">
+                <div class="w-full h-12 p-1.5 text-sm text-slate-800 select-all overflow-y-auto ${row.status === 'translating' ? 'opacity-50 text-slate-400 font-light' : ''}">
+                    ${row.result ? row.result : '<span class="text-slate-300 italic text-xs">A열 원문이 작성되면 결과가 출력됩니다.</span>'}
+                </div>
+                ${row.result ? `
+                    <button onclick="copyToClipboard('${row.result.replace(/'/g, "\\'")}')" class="absolute right-3 bottom-3 opacity-0 group-hover:opacity-100 bg-white border border-slate-200 hover:border-indigo-500 hover:text-indigo-600 shadow-sm p-1 rounded-md text-slate-400 transition" title="번역결과 복사">
+                        <i class="fa-regular fa-copy text-xs"></i>
+                    </button>
+                ` : ''}
+            </td>
+            <td class="px-3 py-3 text-center flex items-center justify-center space-x-2 h-[76px]">
+                <button onclick="triggerRowTranslation(${row.id})" class="px-2 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 hover:text-indigo-700 text-xs font-semibold rounded-lg transition" title="수동 재번역">
+                    <i class="fa-solid fa-rotate"></i>
+                </button>
+                <button onclick="deleteRow(${row.id})" class="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 text-xs font-semibold rounded-lg transition" title="행 삭제">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </td>
+        `;
+
+        gridBody.appendChild(tr);
+    });
+}
+
+
+// Queue for handling debounce to avoid triggering multiple api calls instantly
+let translationTimeoutMap = {};
+
+function updateRowOriginal(id, value) {
+    const row = gridRows.find(r => r.id === id);
+    if (row) {
+        row.original = value;
+    }
+}
+
+function onRowFieldBlur(id) {
+    const isAuto = document.getElementById('setting-auto-translate').checked;
+    if (isAuto) {
+        triggerRowTranslation(id);
+    }
+}
+
+function updateRowLang(id, newLang) {
+    const row = gridRows.find(r => r.id === id);
+    if (row) {
+        row.lang = newLang;
+        const isAuto = document.getElementById('setting-auto-translate').checked;
+        if (isAuto) {
+            triggerRowTranslation(id);
+        } else {
+            renderGrid();
+        }
+    }
+}
+
+// Perform translation for specific row
+async function triggerRowTranslation(id) {
+    const row = gridRows.find(r => r.id === id);
+    if (!row) return;
+
+    if (!row.original.trim()) {
+        row.result = '';
+        row.status = 'idle';
+        renderGrid();
+        return;
+    }
+
+    row.status = 'translating';
+    renderGrid();
+
+    const tone = document.getElementById('setting-tone').value;
+    const domain = document.getElementById('setting-domain').value;
+
+    try {
+        const resultText = await translateTextWithGemini(row.original, row.lang, tone, domain);
+        row.result = resultText;
+        row.status = 'success';
+        renderGrid();
+    } catch (error) {
+        row.result = `[에러 발생: 번역 불가]`;
+        row.status = 'error';
+        renderGrid();
+    }
+}
+
+
+// Adding a new clean row
+function addRow() {
+    gridRows.push({
+        id: nextId++,
+        original: "",
+        lang: "en",
+        result: "",
+        status: "idle"
+    });
+    renderGrid();
+    showToast("새 번역 행을 추가했습니다.");
+}
+
+// Deleting targeted row
+function deleteRow(id) {
+    gridRows = gridRows.filter(r => r.id !== id);
+    renderGrid();
+    showToast("행을 삭제했습니다.");
+}
+
+// Clear all rows
+function clearAll() {
+    gridRows = [];
+    renderGrid();
+    showToast("전체 테이블을 비웠습니다.");
+}
+
+
+// Bulk Translate all empty or pending rows
+async function translateAll() {
+    const pendingRows = gridRows.filter(r => r.original.trim().length > 0);
+    if (pendingRows.length === 0) {
+        showToast("원문이 입력된 번역 대상 행이 없습니다.", "error");
+        return;
+    }
+
+    showToast(`${pendingRows.length}개의 행에 대하여 번역을 일괄 요청합니다...`, "info");
+    
+    // Process translations in parallel (using Promise.all for high performance)
+    const promises = pendingRows.map(async (row) => {
+        row.status = 'translating';
+        renderGrid();
+        
+        const tone = document.getElementById('setting-tone').value;
+        const domain = document.getElementById('setting-domain').value;
+        
+        try {
+            const resultText = await translateTextWithGemini(row.original, row.lang, tone, domain);
+            row.result = resultText;
+            row.status = 'success';
+        } catch (error) {
+            row.result = `[번역 오류]`;
+            row.status = 'error';
+        }
+    });
+
+    await Promise.all(promises);
+    renderGrid();
+    showToast("전체 번역 작업이 완료되었습니다!");
+}
+
+// Open Import Modal
+function openBulkModal() {
+    document.getElementById('modal-bulk-import').classList.remove('hidden');
+    document.getElementById('bulk-import-input').focus();
+}
+
+// Close Import Modal
+function closeBulkModal() {
+    document.getElementById('modal-bulk-import').classList.add('hidden');
+    document.getElementById('bulk-import-input').value = '';
+}
+
+// Process and insert bulk text inputs
+function handleBulkImport() {
+    const rawInput = document.getElementById('bulk-import-input').value;
+    const selectedLang = document.getElementById('bulk-import-lang').value;
+    
+    if (!rawInput.trim()) {
+        showToast("가져올 텍스트가 입력되지 않았습니다.", "error");
+        return;
+    }
+
+    const sentences = rawInput.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+    
+    sentences.forEach(sentence => {
+        gridRows.push({
+            id: nextId++,
+            original: sentence,
+            lang: selectedLang,
+            result: "",
+            status: "idle"
+        });
+    });
+
+    closeBulkModal();
+    renderGrid();
+    showToast(`${sentences.length}개의 행을 추가했습니다.`);
+
+    // Perform Auto-Translation on newly imported lines immediately if auto-translate is turned on
+    if (document.getElementById('setting-auto-translate').checked) {
+        translateAll();
+    }
+}
+
+
+// Native Clipboard Copy logic utilizing fallback technique described in instruction
+function copyToClipboard(text) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed"; // Avoid scrolling to bottom
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            showToast("클립보드에 번역 결과를 복사했습니다!");
+        } else {
+            showToast("복사 실패", "error");
+        }
+    } catch (err) {
+        showToast("클립보드 복사 중 오류 발생", "error");
+    }
+    
+    document.body.removeChild(textArea);
+}
+
+// Export to CSV spreadsheet file
+function exportToCSV() {
+    if (gridRows.length === 0) {
+        showToast("내보낼 데이터가 없습니다.", "error");
+        return;
+    }
+
+    let csvContent = "\uFEFF"; // Add UTF-8 BOM to resolve excel korean encoding issues
+    csvContent += "원문 (Original Text),번역할 언어 (Target Language),번역 결과 (Translation)\r\n";
+
+    gridRows.forEach(row => {
+        const langName = Object.keys(LANGUAGE_MAP).find(k => LANGUAGE_MAP[k] === row.lang) || row.lang;
+        const escapedOriginal = `"${row.original.replace(/"/g, '""')}"`;
+        const escapedResult = `"${row.result.replace(/"/g, '""')}"`;
+        csvContent += `${escapOriginal},"${langName}",${escapResult}\r\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", `TransGrid_AI_Export_${new Date().toISOString().slice(0,10)}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showToast("CSV 파일이 다운로드 폴더로 내보내졌습니다!");
+}
+
+
+// Event Binding Setup
+window.onload = function() {
+    // Populate Modal Bulk Language Selector
+    const modalSelect = document.getElementById('bulk-import-lang');
+    Object.entries(LANGUAGE_MAP).forEach(([name, code]) => {
+        const opt = document.createElement('option');
+        opt.value = code;
+        opt.textContent = name;
+        if(code === 'en') opt.selected = true; // Default target
+        modalSelect.appendChild(opt);
+    });
+
+    // Sidebar Action Buttons
+    document.getElementById('btn-add-row').addEventListener('click', addRow);
+    document.getElementById('btn-empty-add').addEventListener('click', addRow);
+    document.getElementById('btn-clear-all').addEventListener('click', clearAll);
+    
+    // Header Actions
+    document.getElementById('btn-translate-all').addEventListener('click', translateAll);
+    document.getElementById('btn-export-csv').addEventListener('click', exportToCSV);
+    
+    // Bulk Import Modal Triggers
+    document.getElementById('btn-import-bulk').addEventListener('click', openBulkModal);
+    document.getElementById('modal-bulk-close').addEventListener('click', closeBulkModal);
+    document.getElementById('modal-bulk-cancel').addEventListener('click', closeBulkModal);
+    document.getElementById('modal-bulk-submit').addEventListener('click', handleBulkImport);
+
+    // Dynamic Tone/Domain change updates the result automatically if Auto is active
+    document.getElementById('setting-tone').addEventListener('change', () => {
+        if(document.getElementById('setting-auto-translate').checked) translateAll();
+    });
+    document.getElementById('setting-domain').addEventListener('change', () => {
+        if(document.getElementById('setting-auto-translate').checked) translateAll();
+    });
+
+    // Close Modal on clicking background overlay
+    document.getElementById('modal-bulk-import').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('modal-bulk-import')) {
+            closeBulkModal();
+        }
+    });
+
+    // Initial Drawing of Grid
+    renderGrid();
+};
+</script>
+</body>
+</html>
